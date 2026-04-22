@@ -1,0 +1,2 @@
+runtime: nodejs20 # or another supported version
+service: prod-middle
