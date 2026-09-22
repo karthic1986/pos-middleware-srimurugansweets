@@ -45,6 +45,32 @@ exports.findAll = (req, res) => {
         });
       });
 };
+// Search Active Customers by mobile number prefix (limited results, for typeahead lookups)
+exports.search = (req, res) => {
+  const mobile = req.query.mobile;
+  if (!mobile) {
+    res.status(400).send({
+      message: "mobile query parameter is required",
+    });
+    return;
+  }
+  Customer.findAll({
+    where: {
+      mobile: { [Op.like]: `${mobile}%` },
+      isActive: true,
+    },
+    limit: 10,
+  })
+      .then((data) => {
+        res.send(data);
+      })
+      .catch((err) => {
+        res.status(500).send({
+          message:
+              err.message || "Some error occurred while searching customers.",
+        });
+      });
+};
 // Retrieve Activel Customer from the database.
 exports.active = (req, res) => {
   const condition = {

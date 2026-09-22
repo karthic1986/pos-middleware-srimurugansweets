@@ -11,6 +11,9 @@ module.exports = (app) => {
   // Retrieve all active Customers
   router.get("/active", customers.active);
 
+  // Search active Customers by mobile number prefix
+  router.get("/search", customers.search);
+
   // Retrieve a single Customer with id
   router.get("/:id", customers.findOne);
 
