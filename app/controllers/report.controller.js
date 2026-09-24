@@ -70,6 +70,34 @@ exports.nondeliveryReport = (req, res) => {
     });
 };
 
+exports.nondeliveryReportByProduct = (req, res) => {
+  const fDate = req.query.fdate;
+  const tDate = req.query.tdate;
+
+  if (!fDate || !tDate) {
+    res.status(400).send({
+      message: "Date can not be empty!",
+    });
+    return;
+  }
+
+  const qry = `select OD.productId, P.name, sum(OD.qty) as totalQty, sum(OD.totalAmount) as totalAmount from orders O INNER JOIN orderDetails OD on OD.orderId = O.id INNER JOIN products P on P.id = OD.productId WHERE Date(O.deliveryDate) BETWEEN '${fDate}' AND '${tDate}' AND O.isDelivery=0 GROUP BY OD.productId ORDER BY P.name;`;
+  db.sequelize
+    .query(
+      qry,
+
+      { type: sequelize.QueryTypes.SELECT }
+    )
+    .then((data) => {
+      res.send(data);
+    })
+    .catch((err) => {
+      res.status(500).send({
+        message: err.message || "Some error occurred while retrieving report.",
+      });
+    });
+};
+
 exports.productWiseSalesReport = (req, res) => {
   const fDate = req.query.fdate;
   const tDate = req.query.tdate;

@@ -7,6 +7,8 @@ module.exports = (app) => {
 
   router.get("/nondelivery", reports.nondeliveryReport);
 
+  router.get("/nondeliverybyproduct", reports.nondeliveryReportByProduct);
+
   // Retrieve Product Wise Sales Report by date
   router.get("/productwisesales", reports.productWiseSalesReport);
 
