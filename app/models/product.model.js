@@ -18,6 +18,11 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.STRING(50),
       allowNull: false,
     },
+    // Name shown on the receipt; defaults to name.
+    printName: {
+      type: Sequelize.STRING(100),
+      allowNull: true,
+    },
     price: {
       type: Sequelize.FLOAT,
       allowNull: false,

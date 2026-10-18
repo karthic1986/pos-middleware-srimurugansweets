@@ -19,6 +19,7 @@ exports.create = (req, res) => {
   const product = {
     categoryId: req.body.categoryId,
     name: req.body.name,
+    printName: req.body.printName || req.body.name,
     shortName: req.body.shortName,
     imageUrl: req.body.imageUrl,
     description: req.body.description,
@@ -90,6 +91,9 @@ exports.findOne = (req, res) => {
 // Update a Product by the id in the request
 exports.update = (req, res) => {
   const id = req.params.id;
+  if (req.body.printName === "" && req.body.name) {
+    req.body.printName = req.body.name;
+  }
   Product.update(req.body, {
     where: {id: id},
   })

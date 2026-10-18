@@ -46,6 +46,7 @@ require("./app/routes/orderDetail.routes")(app);
 require("./app/routes/report.routes")(app);
 require("./app/routes/dashboard.routes")(app);
 require("./app/routes/delivery.routes")(app);
+require("./app/routes/appSetting.routes")(app);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
@@ -53,7 +54,8 @@ app.listen(PORT, () => {
 });
 
 const db = require("./app/models");
-db.sequelize.sync()
+const migrate = require("./app/models/migrations");
+migrate(db)
     .then(() => {
       console.log("Synced db.");
     })
