@@ -16,10 +16,19 @@ const seedAppSettings = (settings) => async (db) => {
 const THERMAL_PRINT_ENABLED_DESCRIPTION =
   "Default for the \"Thermal printer\" checkbox on the order screen, and the printer used for reprints. " +
   "Only the exact value \"false\" makes this PC's own printer (print dialog) the default.";
+const THERMAL_PRINT_METHOD_DESCRIPTION =
+  "How thermal bills reach the printer. \"driver\" (default): the browser prints an 80mm bill through the printer's " +
+  "own driver; make it this PC's default printer. \"print-server\": sent through print-server/server.js, " +
+  "which must be running on this PC.";
 const PRINTER_HOST_DESCRIPTION =
-  "IP address of the thermal printer on the shop network. Required: if blank, bills open in the normal A5 print dialog.";
+  "Only for THERMAL_PRINT_METHOD \"print-server\": IP address of the thermal printer on the shop network. " +
+  "Required for that method: if blank, bills open in the normal A5 print dialog.";
 const PRINTER_PORT_DESCRIPTION =
-  "Raw printing port of the thermal printer, almost always 9100. Blank / invalid = 9100.";
+  "Only for THERMAL_PRINT_METHOD \"print-server\": raw printing port of the thermal printer, almost always 9100. " +
+  "Blank / invalid = 9100.";
+const PRINTER_DARKNESS_DESCRIPTION =
+  "Only for THERMAL_PRINT_METHOD \"print-server\" (with the driver, set darkness in the printer's driver settings): " +
+  "how dark the thermal bill prints (100-220). Higher = bolder text. Blank / invalid = 160.";
 
 const MIGRATIONS = [
   {
@@ -76,7 +85,7 @@ const MIGRATIONS = [
       {
         name: "PRINTER_DARKNESS",
         value: "160",
-        description: "How dark the thermal bill prints (100-220). Higher = bolder text. Blank / invalid = 160.",
+        description: PRINTER_DARKNESS_DESCRIPTION,
       },
       {
         name: "PRINTER_COPIES",
@@ -101,6 +110,23 @@ const MIGRATIONS = [
           {description: THERMAL_PRINT_ENABLED_DESCRIPTION},
           {where: {name: "THERMAL_PRINT_ENABLED"}},
       );
+    },
+  },
+  {
+    // Thermal bills now print through the printer's driver by default; the
+    // printer address and darkness only matter for the print server.
+    name: "seed-thermal-print-method",
+    up: async (db) => {
+      await seedAppSettings([
+        {
+          name: "THERMAL_PRINT_METHOD",
+          value: "driver",
+          description: THERMAL_PRINT_METHOD_DESCRIPTION,
+        },
+      ])(db);
+      await db.appSettings.update({description: PRINTER_HOST_DESCRIPTION}, {where: {name: "PRINTER_HOST"}});
+      await db.appSettings.update({description: PRINTER_PORT_DESCRIPTION}, {where: {name: "PRINTER_PORT"}});
+      await db.appSettings.update({description: PRINTER_DARKNESS_DESCRIPTION}, {where: {name: "PRINTER_DARKNESS"}});
     },
   },
 ];
