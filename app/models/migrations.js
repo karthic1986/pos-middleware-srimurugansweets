@@ -27,8 +27,16 @@ const PRINTER_PORT_DESCRIPTION =
   "Only for THERMAL_PRINT_METHOD \"print-server\": raw printing port of the thermal printer, almost always 9100. " +
   "Blank / invalid = 9100.";
 const PRINTER_DARKNESS_DESCRIPTION =
-  "Only for THERMAL_PRINT_METHOD \"print-server\" (with the driver, set darkness in the printer's driver settings): " +
-  "how dark the thermal bill prints (100-220). Higher = bolder text. Blank / invalid = 160.";
+  "For THERMAL_PRINT_METHOD \"print-server\" and Bluetooth printers (with the driver, set darkness in the " +
+  "printer's driver settings): how dark the thermal bill prints (100-220). Higher = bolder text. Blank / invalid = 160.";
+
+const BLUETOOTH_PRINTER_CHUNK_BYTES_DESCRIPTION =
+  "Bytes sent to the Bluetooth printer per write (20-512). Higher prints faster: try 180, then 244, " +
+  "then 512; go back if bills print garbled or the printer stops. Blank / invalid = 100.";
+const BLUETOOTH_PRINTER_TEXT_MODE_DESCRIPTION =
+  "\"true\" (default): Bluetooth bills print English lines in the printer's own font, Tamil lines as small " +
+  "images and the QR code as the printer's own symbol, which is many times faster. \"false\": the whole bill " +
+  "is sent as one image, like the print server (looks the same as the PC bill, but slow over Bluetooth).";
 
 const MIGRATIONS = [
   {
@@ -127,6 +135,55 @@ const MIGRATIONS = [
       await db.appSettings.update({description: PRINTER_HOST_DESCRIPTION}, {where: {name: "PRINTER_HOST"}});
       await db.appSettings.update({description: PRINTER_PORT_DESCRIPTION}, {where: {name: "PRINTER_PORT"}});
       await db.appSettings.update({description: PRINTER_DARKNESS_DESCRIPTION}, {where: {name: "PRINTER_DARKNESS"}});
+    },
+  },
+  {
+    // Phones can print bills on a Bluetooth (BLE) printer, chosen per device on the order screen.
+    name: "seed-bluetooth-printer-settings",
+    up: async (db) => {
+      await seedAppSettings([
+        {
+          name: "BLUETOOTH_PRINTER_PAPER_WIDTH_MM",
+          value: "58",
+          description: "Paper width in mm of the Bluetooth printer used from phones: 58 or 80. Anything else = 58.",
+        },
+        {
+          name: "BLUETOOTH_PRINTER_CHUNK_BYTES",
+          value: "",
+          description: BLUETOOTH_PRINTER_CHUNK_BYTES_DESCRIPTION,
+        },
+      ])(db);
+      await db.appSettings.update({description: PRINTER_DARKNESS_DESCRIPTION}, {where: {name: "PRINTER_DARKNESS"}});
+    },
+  },
+  {
+    // Bluetooth bills now go out as writes without response, 20 bytes each by default.
+    name: "update-bluetooth-chunk-description",
+    up: async (db) => {
+      await db.appSettings.update(
+          {description: BLUETOOTH_PRINTER_CHUNK_BYTES_DESCRIPTION},
+          {where: {name: "BLUETOOTH_PRINTER_CHUNK_BYTES"}},
+      );
+    },
+  },
+  {
+    // Bluetooth bills are now mostly text, and always wait for the printer's
+    // reply: writes that don't wait corrupted the RP3230's bills. The fast-write
+    // setting was added by hand on the Settings screen and is no longer read.
+    name: "seed-bluetooth-text-mode",
+    up: async (db) => {
+      await seedAppSettings([
+        {
+          name: "BLUETOOTH_PRINTER_TEXT_MODE",
+          value: "true",
+          description: BLUETOOTH_PRINTER_TEXT_MODE_DESCRIPTION,
+        },
+      ])(db);
+      await db.appSettings.destroy({where: {name: "BLUETOOTH_PRINTER_FAST_WRITE_DELAY_MS"}});
+      await db.appSettings.update(
+          {description: BLUETOOTH_PRINTER_CHUNK_BYTES_DESCRIPTION},
+          {where: {name: "BLUETOOTH_PRINTER_CHUNK_BYTES"}},
+      );
     },
   },
 ];
